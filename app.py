@@ -21,10 +21,10 @@ def gradient(x, y):
 # Sidebar
 st.sidebar.header("Parameters")
 
-alpha = st.sidebar.slider("Step size", 0.01, 0.15, 0.08)
-x0 = st.sidebar.slider("Initial x", -4.0, 4.0, -3.0)
-y0 = st.sidebar.slider("Initial y", -4.0, 4.0, 3.0)
-n = st.sidebar.slider("Iterations", 1, 50, 10)
+alpha = st.sidebar.slider("Step size", 0.01, 0.15, 0.12)
+x0 = st.sidebar.slider("Initial x", -4.0, 4.0, -3.43)
+y0 = st.sidebar.slider("Initial y", -4.0, 4.0, 4.0)
+n = st.sidebar.slider("Iterations", 1, 50, 25)
 
 # Gradient descent
 p = np.array([x0, y0])
