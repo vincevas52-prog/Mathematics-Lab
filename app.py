@@ -81,6 +81,7 @@ fig.update_layout(
 )
 
 st.latex(r"f(x,y)=(x-1)^2+3\left(y-\frac{x^2}{4}\right)^2")
+st.latex(r"\mathbf{p}_{k+1}=\mathbf{p}_k-\alpha\nabla f(\mathbf{p}_k)")
 st.plotly_chart(fig)
 
 fig2 = go.Figure()
