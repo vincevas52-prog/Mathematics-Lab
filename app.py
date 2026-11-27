@@ -1,180 +1,458 @@
 import streamlit as st
-import numpy as np
-import plotly.graph_objects as go
-import time
-from contourpy import contour_generator
-from plotly.colors import sample_colorscale
 
-st.set_page_config(page_title="Mathematics Lab", layout="wide")
-st.title("Gradient Descent Playground")
-
-# Mathematical functions
-def f(x, y):
-    return (x-1)**2 + 3*(y-x**2/4)**2
-
-def gradient(x, y):
-    return np.array([
-        2*(x-1) - 3*x*(y-x**2/4),
-        6*(y-x**2/4)
-    ])
-
-# Sidebar
-st.sidebar.header("Parameters")
-
-alpha = st.sidebar.slider("Step size", 0.01, 0.15, 0.12)
-x0 = st.sidebar.slider("Initial x", -4.0, 4.0, -3.43)
-y0 = st.sidebar.slider("Initial y", -4.0, 4.0, 4.0)
-n = st.sidebar.slider("Iterations", 1, 50, 25)
-
-# Gradient descent
-p = np.array([x0, y0])
-points = [p.copy()]
-
-for k in range(n):
-    p = p - alpha * gradient(p[0], p[1])
-
-    if not np.all(np.isfinite(p)) or np.linalg.norm(p) > 100:
-        st.warning("Possible divergence detected!")
-        break
-
-    points.append(p.copy())
-
-points = np.array(points)
-z_max = np.max(f(points[:, 0], points[:, 1]))
-
-# Surface
-x = np.linspace(-4, 4, 200)
-y = np.linspace(-4, 4, 200)
-
-X, Y = np.meshgrid(x, y)
-Z = f(X, Y)
-
-fig = go.Figure()
-
-fig.add_trace(go.Surface(
-    x=X, y=Y, z=Z,
-    colorscale="Viridis",
-    opacity=0.4,
-    showscale=False
-))
-
-# Iteration points
-fig.add_trace(go.Scatter3d(
-    x=points[:, 0],
-    y=points[:, 1],
-    z=f(points[:, 0], points[:, 1]),
-    mode="lines+markers",
-    line=dict(color="red", width=6),
-    marker=dict(size=5, color="red"),
-    name="Gradient descent"
-))
-
-fig.update_layout(
-    template="plotly_dark",
-    height=700,
-    scene=dict(
-        xaxis_title="x",
-        yaxis_title="y",
-        zaxis_title="f(x,y)",
-        zaxis=dict(range=[0, max(1, 1.2*z_max)])
-    )
+st.set_page_config(
+    page_title="Math Lab",
+    page_icon="📐",
+    layout="wide"
 )
 
-st.latex(r"f(x,y)=(x-1)^2+3\left(y-\frac{x^2}{4}\right)^2")
-st.latex(r"\mathbf{p}_{k+1}=\mathbf{p}_k-\alpha\nabla f(\mathbf{p}_k)")
-st.plotly_chart(fig)
 
-fig2 = go.Figure()
+# ==========================================
+# CUSTOM STYLING
+# ==========================================
 
-cg = contour_generator(x=x, y=y, z=Z, line_type="Separate")
+st.markdown("""
+<style>
 
-levels = np.arange(0.2, 70, 1)
+/* Hero section */
 
-for c in levels:
-    curves = cg.lines(c)
+.mathlab-hero {
+    background: linear-gradient(
+        120deg,
+        #21172F 0%,
+        #302044 55%,
+        #17151F 100%
+    );
+    border: 1px solid #55406E;
+    border-radius: 18px;
+    padding: 38px 42px;
+    margin-bottom: 30px;
+}
 
-    for curve in curves:
-        fig2.add_trace(go.Scatter(
-            x=curve[:, 0],
-            y=curve[:, 1],
-            mode="lines",
-            line=dict(
-                color=sample_colorscale("Viridis", c/70)[0],
-                width=1.5
-            ),
-            showlegend=False,
-            hoverinfo="skip"
-        ))
+.mathlab-brand {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    color: #BEA5E8;
+    margin-bottom: 12px;
+}
 
-path_index = len(fig2.data)
+.mathlab-title {
+    font-size: 56px;
+    font-weight: 750;
+    letter-spacing: -1.5px;
+    color: #FFFFFF;
+    margin-bottom: 12px;
+}
 
-fig2.add_trace(go.Scatter(
-    x=points[:, 0],
-    y=points[:, 1],
-    mode="lines+markers",
-    line=dict(color="red", width=3),
-    marker=dict(size=6, color="red"),
-    name="Gradient descent"
-))
+.mathlab-motto {
+    font-size: 23px;
+    font-weight: 500;
+    color: #DDC8FF;
+    margin-bottom: 16px;
+}
 
-fig2.update_layout(
-    template="plotly_dark",
-    height=700,
-    xaxis_title="x",
-    yaxis_title="y"
-)
+.mathlab-description {
+    font-size: 16px;
+    line-height: 1.7;
+    color: #C8C0D3;
+    max-width: 760px;
+}
 
-fig2.update_xaxes(
-    range=[-4, 4],
-    dtick=1,
-    constrain="domain"
-)
+/* Module descriptions */
 
-fig2.update_yaxes(
-    range=[-4, 4],
-    dtick=1,
-    scaleanchor="x",
-    scaleratio=1,
-    constrain="domain"
-)
+.module-description {
+    color: #B5AABD;
+    font-size: 15px;
+    line-height: 1.7;
+    margin-bottom: 14px;
+}
 
-# Animation
-frames = []
+/* Learning path */
 
-for k in range(len(points)):
-    frame = go.Frame(
-        data=[go.Scatter(
-            x=points[:k+1, 0],
-            y=points[:k+1, 1]
-        )],
-        traces=[path_index]
+.mathlab-learning-path {
+    background: #211A2D;
+    border-left: 3px solid #8965B6;
+    border-radius: 8px;
+    padding: 20px 24px;
+    color: #E8E2EF;
+    line-height: 2;
+}
+
+/* Mobile */
+
+@media (max-width: 700px) {
+
+    .mathlab-hero {
+        padding: 26px 22px;
+    }
+
+    .mathlab-title {
+        font-size: 39px;
+    }
+
+    .mathlab-motto {
+        font-size: 18px;
+    }
+
+    .mathlab-description {
+        font-size: 14px;
+    }
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+
+# ==========================================
+# HOME PAGE
+# ==========================================
+
+def home():
+
+    # ======================================
+    # HERO SECTION
+    # ======================================
+
+    hero_html = (
+        '<div class="mathlab-hero">'
+        '<div class="mathlab-brand">'
+        'INTERACTIVE MATHEMATICS'
+        '</div>'
+        '<div class="mathlab-title">'
+        'Σ Math Lab'
+        '</div>'
+        '<div class="mathlab-motto">'
+        'Visualize the idea. Understand the proof.'
+        '</div>'
+        '<div class="mathlab-description">'
+        'Explore university-level mathematics through '
+        'interactive visualizations, rigorous mathematical '
+        'theory, and carefully explained proofs.'
+        '</div>'
+        '</div>'
     )
 
-    frames.append(frame)
+    st.markdown(hero_html, unsafe_allow_html=True)
 
-fig2.frames = frames
+    # ======================================
+    # MODULES
+    # ======================================
 
-fig2.update_layout(
-    updatemenus=[
-        dict(
-            type="buttons",
-            bgcolor="#dc2626",
-            showactive=False,
-            borderwidth=1,
-            font=dict(color="white", size=15),
-            buttons=[
-                dict(
-                    label="Start",
-                    method="animate",
-                    args=[None, dict(
-                        frame=dict(duration=200, redraw=False),
-                        transition=dict(duration=0),
-                        fromcurrent=True
-                    )]
-                )
-            ]
+    st.header("Explore Mathematics")
+
+    st.markdown(
+        "Choose a topic to explore its concepts, "
+        "visualizations, and mathematical foundations."
+    )
+
+    st.write("")
+
+    left, right = st.columns(2, gap="large")
+
+    # ======================================
+    # DERIVATIVES
+    # ======================================
+
+    with left:
+
+        with st.container(border=True):
+
+            st.subheader("📚 Derivatives")
+
+            st.markdown(
+                '<div class="module-description">'
+                'Build a rigorous understanding of derivatives, '
+                'differentiability, and the rules of differentiation.'
+                '</div>',
+                unsafe_allow_html=True
+            )
+
+            st.page_link(
+                "derivative.py",
+                label="Understanding Derivatives",
+                icon="📐"
+            )
+
+            st.page_link(
+                "differentiability.py",
+                label="Differentiability & Rules",
+                icon="📖"
+            )
+
+            st.page_link(
+                "a_deeper_look_at_differentiability.py",
+                label="A Deeper Look at Differentiability",
+                icon="🔬"
+            )
+
+    # ======================================
+    # TAYLOR POLYNOMIALS
+    # ======================================
+
+    with right:
+
+        with st.container(border=True):
+
+            st.subheader("📈 Taylor Polynomials")
+
+            st.markdown(
+                '<div class="module-description">'
+                'Understand polynomial approximations, '
+                "Taylor's theorem, and the behavior "
+                'of approximation errors.'
+                '</div>',
+                unsafe_allow_html=True
+            )
+
+            st.page_link(
+                "Taylor.py",
+                label="Interactive Visualization",
+                icon="📈"
+            )
+
+            st.page_link(
+                "taylor_theory.py",
+                label="Theory & Proof",
+                icon="📖"
+            )
+
+            st.page_link(
+                "taylor_error.py",
+                label="Error Analysis",
+                icon="📊"
+            )
+
+    # ======================================
+    # SECOND ROW
+    # ======================================
+
+    left2, right2 = st.columns(2, gap="large")
+
+    # ======================================
+    # MULTIVARIABLE DIFFERENTIATION
+    # ======================================
+
+    with left2:
+
+        with st.container(border=True):
+
+            st.subheader(
+                "🧭 Multivariable Differentiation"
+            )
+
+            st.markdown(
+                '<div class="module-description">'
+                'Extend differentiation to several variables '
+                'and explore gradients, directional derivatives, '
+                'and the multivariable chain rule.'
+                '</div>',
+                unsafe_allow_html=True
+            )
+
+            st.page_link(
+                "partial_derivatives.py",
+                label="Partial Derivatives",
+                icon="📐"
+            )
+
+            st.page_link(
+                "multivariable_differentiability.py",
+                label="Differentiability in Several Variables",
+                icon="📖"
+            )
+
+            st.page_link(
+                "directional_derivatives.py",
+                label="Gradient & Directional Derivatives",
+                icon="🧭"
+            )
+
+            st.page_link(
+                "multivariable_chain_rule.py",
+                label="The Multivariable Chain Rule",
+                icon="🔗"
+            )
+
+    # ======================================
+    # GRADIENT DESCENT
+    # ======================================
+
+    with right2:
+
+        with st.container(border=True):
+
+            st.subheader("📉 Gradient Descent")
+
+            st.markdown(
+                '<div class="module-description">'
+                'Explore iterative optimization algorithms, '
+                'convergence principles, and the mathematical '
+                'theory behind gradient descent.'
+                '</div>',
+                unsafe_allow_html=True
+            )
+
+            st.page_link(
+                "gradient.py",
+                label="Interactive Visualization",
+                icon="📉"
+            )
+
+            st.page_link(
+                "gradient_theory.py",
+                label="Theory & Proof",
+                icon="📖"
+            )
+
+    # ======================================
+    # SUGGESTED LEARNING PATHS
+    # ======================================
+
+    st.write("")
+
+    st.divider()
+
+    st.subheader("Suggested Learning Paths")
+
+    learning_html = (
+        '<div class="mathlab-learning-path">'
+        '<strong>Foundations:</strong> '
+        'Derivatives → Differentiability → Taylor Polynomials'
+        '<br>'
+        '<strong>Multivariable Analysis:</strong> '
+        'Partial Derivatives → Differentiability → '
+        'Directional Derivatives → Chain Rule'
+        '<br>'
+        '<strong>Optimization:</strong> '
+        'Gradient & Directional Derivatives → Gradient Descent'
+        '</div>'
+    )
+
+    st.markdown(learning_html, unsafe_allow_html=True)
+
+    st.write("")
+
+    st.caption(
+        "Math Lab — Explore. Understand. Prove."
+    )
+
+
+# ==========================================
+# PAGE NAVIGATION
+# ==========================================
+
+pages = {
+
+    "": [
+
+        st.Page(
+            home,
+            title="Home",
+            icon="🏠",
+            default=True
         )
+
+    ],
+
+    "Taylor Polynomials": [
+
+        st.Page(
+            "Taylor.py",
+            title="Visualization",
+            icon="📈"
+        ),
+
+        st.Page(
+            "taylor_theory.py",
+            title="Theory & Proof",
+            icon="📖"
+        ),
+
+        st.Page(
+            "taylor_error.py",
+            title="Error Analysis",
+            icon="📊"
+        )
+
+    ],
+
+    "Gradient Descent": [
+
+        st.Page(
+            "gradient.py",
+            title="Visualization",
+            icon="📉"
+        ),
+
+        st.Page(
+            "gradient_theory.py",
+            title="Theory & Proof",
+            icon="📖"
+        )
+
+    ],
+
+    "Derivatives": [
+
+        st.Page(
+            "derivative.py",
+            title="Understanding Derivatives",
+            icon="📐"
+        ),
+
+        st.Page(
+            "differentiability.py",
+            title="Differentiability & Rules",
+            icon="📖"
+        ),
+
+        st.Page(
+            "a_deeper_look_at_differentiability.py",
+            title="A Deeper Look at Differentiability",
+            icon="🔬"
+        )
+
+    ],
+
+    "Multivariable Differentiation": [
+
+        st.Page(
+            "partial_derivatives.py",
+            title="Partial Derivatives",
+            icon="📐"
+        ),
+
+        st.Page(
+            "multivariable_differentiability.py",
+            title="Differentiability in Several Variables",
+            icon="📖"
+        ),
+
+        st.Page(
+            "directional_derivatives.py",
+            title="Gradient & Directional Derivatives",
+            icon="🧭"
+        ),
+
+        st.Page(
+            "multivariable_chain_rule.py",
+            title="The Multivariable Chain Rule",
+            icon="🔗"
+        )
+
     ]
+
+}
+
+
+# ==========================================
+# RUN NAVIGATION
+# ==========================================
+
+pg = st.navigation(
+    pages,
+    position="top"
 )
 
-st.plotly_chart(fig2)
+pg.run()
